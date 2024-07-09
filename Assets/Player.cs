@@ -13,9 +13,17 @@ public class Player : MonoBehaviour {
     [SerializeField] private GameObject hippieTextDialogue; // reference to the hippie dialogue, make sure to drag it in the scene!
 
     private bool canPortal = false; // only if this is true, the player can use the portal. this will be set to true after hitting the note.
+    private Animator animator; // reference to the animator so we can change the sprite of the player
+    private bool isMoving = false; // bool to check if the player is moving or not
+    private SpriteRenderer spriteRenderer; // reference to the sprite renderer so we can change the sprite of the player
+
+    [SerializeField] private GameObject portal; // reference to the portal so we can set it to active or inactive
+    [SerializeField] private Transform teleportDestination; // reference to the teleport destination so we can teleport the player to the center of the world
     
     private void Start() {
         text.SetText("Score:" + score); // make sure the default text at the start of the game says "Score: 0"
+        animator = GetComponent<Animator>(); // get the animator component
+        spriteRenderer = GetComponent<SpriteRenderer>(); // get the sprite renderer component
     }
 
     private void FixedUpdate() {
@@ -33,6 +41,25 @@ public class Player : MonoBehaviour {
         movementVector = new Vector2(x, y);
         movementVector.Normalize();
         
+        if(movementVector != Vector2.zero) {
+            animator.SetBool("isMoving", true);
+            if(!isMoving) animator.SetTrigger("Move");
+            isMoving = true;
+        } else {
+            animator.SetBool("isMoving", false);
+            isMoving = false;
+        }
+        
+        // if we are moving to the right, we flip the sprite so it looks like the player is facing the right direction
+        if (movementVector.x > 0) {
+            spriteRenderer.flipX = true;
+        }
+        
+        // if we are moving to the left, we flip the sprite so it looks like the player is facing the right direction
+        else if (movementVector.x < 0) {
+            spriteRenderer.flipX = false;
+        }
+        
     }
 
     // collision enter instead of trigger enter because the collider of the player is a solid collider and not a trigger
@@ -40,7 +67,7 @@ public class Player : MonoBehaviour {
         // if we hit a pineapple, we add to the score and the ui. we also destroy the pineapple
         if (other.gameObject.CompareTag("Pineapple")) {
             score++;
-            text.SetText("Score: " + score);
+            text.SetText("Pineapple: " + score);
 
             // destroy the object
             Destroy(other.gameObject);
@@ -54,6 +81,7 @@ public class Player : MonoBehaviour {
         if (other.gameObject.CompareTag("Note")) {
             noteTextDialogue.SetActive(true);
             canPortal = true;
+            portal.gameObject.SetActive(true);
         }
 
         // if we hit the hippie, activate the ui component
@@ -65,13 +93,13 @@ public class Player : MonoBehaviour {
         // if we can portal we tp the player to the center of the world, that is where our "earth world" is in the scene 
         if (other.gameObject.CompareTag("Portal")) {
             if (!canPortal) return;
-            transform.position = new Vector3(0, 0, 0);
+            transform.position = teleportDestination.position;
         }
         
         // if we hit the kid, on the player side we only have to reset the score, the kid will take care of changing its sprite
         if (other.gameObject.CompareTag("Kid")) {
             score = 0;
-            text.SetText("Score: " + score);
+            text.SetText("Pineapple: " + score);
         }
     }
 
